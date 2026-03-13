@@ -1,54 +1,37 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
+import bcrypt from "bcryptjs";
+import { z } from "zod";
+
+// Fake DB example
+const users = [
+  { name: "Surbhi", email: "test@example.com", password: "$2b$10$examplehashedpassword" },
+];
+
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+});
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { email, password } = body;
+    const { email, password } = loginSchema.parse(body);
 
-    const backendRes = await fetch('http://localhost:3000/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+    const user = users.find(u => u.email === email);
+    if (!user) return NextResponse.json({ message: "User not found" }, { status: 404 });
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return NextResponse.json({ message: "Incorrect password" }, { status: 401 });
+
+    // Return user + dummy tokens
+    return NextResponse.json({
+      success: true,
+      user: { name: user.name, email: user.email },
+      accessToken: "abc123",
+      refreshToken: "def456",
     });
-
-    console.log(backendRes.body);
-    
-
-    let data: any;
-    try {
-      data = await backendRes.json();  // Try parsing JSON
-    } catch (err) {
-      // Backend did not return JSON
-      console.error('Failed to parse backend JSON:', err);
-      return NextResponse.json({ message: 'Backend error' }, { status: 502 });
-    }
-
-    if (!backendRes.ok) {
-      return NextResponse.json({ message: data?.message || 'Invalid credentials' }, { status: 401 });
-    }
-
-    // Set cookies
-    const response = NextResponse.json({ success: true, user: data.user });
-
-    response.cookies.set('access_token', data.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 15 * 60,
-      path: '/',
-    });
-
-    response.cookies.set('refresh_token', data.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60,
-      path: '/',
-    });
-
-    return response;
-  } catch (err) {
-    console.error('API /login error:', err);
-    return NextResponse.json({ message: 'Server error' }, { status: 500 });
+  } catch (err: any) {
+    console.error(err);
+    return NextResponse.json({ message: err.message || "Server error" }, { status: 500 });
   }
 }

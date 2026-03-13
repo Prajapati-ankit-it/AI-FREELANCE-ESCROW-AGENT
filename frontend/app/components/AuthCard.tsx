@@ -15,15 +15,9 @@ type AuthType = "login" | "register";
 type LoginFormData = z.infer<typeof loginSchema>;
 type RegisterFormData = z.infer<typeof registerSchema>;
 
-
 interface AuthCardProps {
-
-    type: 'login' | 'register';
-  
-    onSubmit?: (data: { email: string; password: string }) => Promise<void>;
-  
-  }
-  
+  type: "login" | "register";
+}
 
 export default function AuthCard({ type }: AuthCardProps) {
   const router = useRouter();
@@ -32,16 +26,6 @@ export default function AuthCard({ type }: AuthCardProps) {
   const isRegister = type === "register";
 
   const schema = isRegister ? registerSchema : loginSchema;
-
-
-
-type LoginData = z.infer<typeof loginSchema>;
-type RegisterData = z.infer<typeof registerSchema>;
-
-interface AuthCardProps {
-  type: "login" | "register";
-  onSubmit: (data: LoginData | RegisterData) => Promise<void>;
-}
 
   const {
     register,
@@ -55,7 +39,7 @@ interface AuthCardProps {
       : { email: "", password: "" },
   });
 
-  const onSubmit = async (formData: LoginFormData | RegisterFormData) => {
+  const handleFormSubmit = async (formData: LoginFormData | RegisterFormData) => {
     const endpoint = isRegister ? "/api/auth/register" : "/api/auth/login";
 
     // Narrow the type safely
@@ -134,7 +118,7 @@ interface AuthCardProps {
             {isRegister ? "Create Account" : "Login to Dashboard"}
           </h2>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
             {isRegister && (
               <div>
                 <input
