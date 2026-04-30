@@ -79,14 +79,16 @@ export class TokenManager {
    */
   static isValidJWT(token: string): boolean {
     if (!token || typeof token !== 'string') return false
-    
+
     // JWT should have 3 parts separated by dots
     const parts = token.split('.')
-    if (parts.length !== 3) return false
-    
+    if (parts.length !== 3 || !parts.every(p => p.length > 0)) return false
+
     try {
-      // Try to decode the payload (basic validation)
-      const payload = JSON.parse(atob(parts[1]))
+      // JWT uses base64URL encoding; convert to standard base64 before atob()
+      const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+      const padded = base64 + '=='.slice(0, (4 - base64.length % 4) % 4)
+      const payload = JSON.parse(atob(padded))
       return payload && typeof payload === 'object'
     } catch {
       return false
@@ -133,7 +135,10 @@ export class TokenManager {
     console.log('Token parts:', tokenToDebug.split('.').length)
     
     try {
-      const payload = JSON.parse(atob(tokenToDebug.split('.')[1]))
+      const raw = tokenToDebug.split('.')[1]
+      const base64 = raw.replace(/-/g, '+').replace(/_/g, '/')
+      const padded = base64 + '=='.slice(0, (4 - base64.length % 4) % 4)
+      const payload = JSON.parse(atob(padded))
       console.log('Token payload:', {
         sub: payload.sub,
         iat: payload.iat,
