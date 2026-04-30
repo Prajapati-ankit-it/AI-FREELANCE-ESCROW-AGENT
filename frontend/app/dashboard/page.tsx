@@ -77,10 +77,14 @@ export default function DashboardPage() {
   }
 
   if (error) {
+    const errStatus = (error as any)?.status
+    const errMsg = (error as any)?.data?.message || (error as any)?.data?.error || JSON.stringify(error)
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">Failed to load dashboard data</p>
+        <div className="text-center max-w-lg">
+          <p className="text-red-600 mb-2 font-semibold">Failed to load dashboard data</p>
+          <p className="text-sm text-gray-500 mb-1">Status: {errStatus ?? 'unknown'}</p>
+          <p className="text-sm text-gray-500 mb-4 break-all">{errMsg}</p>
           <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-[#AD7D56] text-white rounded-lg hover:bg-[#8B6344]"
